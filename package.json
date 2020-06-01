@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "az": "^0.2.3",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-connect": "^5.7.0"
+  }
+}
