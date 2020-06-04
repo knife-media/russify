@@ -40,28 +40,21 @@ function updateWord(tokens, i) {
   let token = tokens[i].toString();
 
   // Check if current word is noun first
-  if (!morph || tokens[i].allUpper) {
+  if (!morph || tokens[i].firstUpper) {
     return token;
   }
-
-  // Skip geo
-  if (morph.tag.Geox) {
-    return token;
-  }
-
-  let invert = true;
 
   // Get adjective
   let adjective = getAdjective(morph.tag, null);
+
+  if (adjective === null) {
+    return token;
+  }
 
   // Check prev tokens
   for (let k = i - 1; k >= 0; k--) {
     // Break on word
     if (tokens[k].type === Az.Tokens.WORD) {
-      invert = false;
-
-      // Lower case adjective
-      adjective = adjective.toLowerCase();
 
       // Check if prev word is adjective
       if (getMorph(tokens[k], 'ADJF')) {
@@ -75,10 +68,6 @@ function updateWord(tokens, i) {
     if (tokens[k].toString() === '.') {
       break;
     }
-  }
-
-  if (invert) {
-    token = token.toLowerCase();
   }
 
   if (adjective) {

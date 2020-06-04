@@ -8,30 +8,50 @@
 
 const Az = require('az');
 const express = require('express');
+const SparkMD5 = require('spark-md5');
+const asyncRedis = require("async-redis");
+
 const russify = require('./russify');
+
+
+// Parse dotenv config
+require('dotenv').config();
 
 // Init express
 const app = express();
+
+// Init redis
+const client = asyncRedis.createClient();
+
+client.on('error', (err) => {
+  console.log('Redis error: ' + err);
+});
+
+
+Az.Morph.init('node_modules/az/dicts', (err) => {
+  if (err) {
+    console.log('Az error: ' + err);
+  }
+});
+
+
+
 
 // Use body parser
 app.use(express.json());
 
 // Post data
 app.post('/', async (req, res, next) => {
-  let body = req.body;
+  let data = [];
 
-  Az.Morph.init('node_modules/az/dicts', (err) => {
-    if (err) {
-      next(err);
-    }
+  for (let i = 0; i < req.body.length; i++) {
+    let hash = 'russify-' + SparkMD5.hash(req.body[i]);
 
-    let data = [];
+    // Find section in redis
+    let section = await client.get(hash) || '';
 
-    body.forEach((section, i) => {
-      let html = [];
-
-      // Parse tokens
-      let tokens = Az.Tokens(section).done();
+    if (!section) {
+      let tokens = Az.Tokens(req.body[i]).done();
 
       tokens.forEach((token, k) => {
         let word = token.toString();
@@ -40,18 +60,21 @@ app.post('/', async (req, res, next) => {
           word = russify(tokens, k);
         }
 
-        html.push(word);
+        section = section + word;
       });
 
-      data[i] = html.join('');
-    });
+      // Store section in redis
+      await client.set(hash, section);
+    }
 
-    res.status(200).json({
-      'success': true,
-      'response': data
-    });
+    data[i] = section;
+  }
+
+  res.status(200).json({
+    'success': true,
+    'results': data
   });
-})
+});
 
 // Show server error
 app.use((err, req, res, next) => {
