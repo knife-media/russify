@@ -38,7 +38,9 @@ Az.Morph.init('node_modules/az/dicts', (err) => {
 
 
 // Use body parser
-app.use(express.json());
+app.use(express.json({
+  limit: '2MB'
+}));
 
 // Post data
 app.post('/', async (req, res, next) => {
