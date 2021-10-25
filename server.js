@@ -1,5 +1,5 @@
 /**
- * Text russification service
+ * Text satanization service
  *
  * @author Anton Lukin
  * @license MIT
@@ -9,9 +9,9 @@
 const Az = require('az');
 const express = require('express');
 const SparkMD5 = require('spark-md5');
-const asyncRedis = require("async-redis");
+const asyncRedis = require('async-redis');
 
-const russify = require('./russify');
+const satanization = require('./satanization');
 
 
 // Parse dotenv config
@@ -21,12 +21,13 @@ require('dotenv').config();
 const app = express();
 
 // Init redis
-const client = asyncRedis.createClient();
+//const client = asyncRedis.createClient();
 
+/*
 client.on('error', (err) => {
   console.log('Redis error: ' + err);
 });
-
+*/
 
 Az.Morph.init('node_modules/az/dicts', (err) => {
   if (err) {
@@ -34,23 +35,20 @@ Az.Morph.init('node_modules/az/dicts', (err) => {
   }
 });
 
-
-
-
 // Use body parser
 app.use(express.json({
   limit: '2MB'
 }));
 
 // Post data
-app.post('/', async (req, res, next) => {
+app.post('/', async (req, res) => {
   let data = [];
 
   for (let i = 0; i < req.body.length; i++) {
-    let hash = 'russify-' + SparkMD5.hash(req.body[i]);
+    let hash = 'satanization-' + SparkMD5.hash(req.body[i]);
 
     // Find section in redis
-    let section = await client.get(hash) || '';
+    let section = '';//await client.get(hash) || '';
 
     if (!section) {
       let tokens = Az.Tokens(req.body[i]).done();
@@ -59,14 +57,14 @@ app.post('/', async (req, res, next) => {
         let word = token.toString();
 
         if (token.type == 'WORD') {
-          word = russify(tokens, k);
+          word = satanization(tokens, k);
         }
 
         section = section + word;
       });
 
       // Store section in redis
-      await client.set(hash, section);
+      //await client.set(hash, section);
     }
 
     data[i] = section;
@@ -79,7 +77,7 @@ app.post('/', async (req, res, next) => {
 });
 
 // Show server error
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   res.status(err.status || 500).json({
     'success': false,
     'message': 'Server internal error'

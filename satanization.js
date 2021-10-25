@@ -1,5 +1,6 @@
 const Az = require('az');
 const forms = require('./forms');
+const excludes = require('./excludes');
 
 function getAdjective(tag, adjective = null) {
   let form = [];
@@ -12,11 +13,12 @@ function getAdjective(tag, adjective = null) {
 
   form.push(tag.CAse);
 
-  let key = form.join(':');
+  const key = form.join(':');
+  const rand = forms[Math.floor(Math.random() * forms.length)];
 
   // Find key in forms
-  if (forms.hasOwnProperty(key)) {
-    adjective = forms[key];
+  if (rand.hasOwnProperty(key)) {
+    adjective = rand[key];
   }
 
   return adjective;
@@ -41,6 +43,11 @@ function updateWord(tokens, i) {
 
   // Check if current word is noun first
   if (!morph || tokens[i].firstUpper) {
+    return token;
+  }
+
+  // Skip excludes
+  if (excludes.includes(tokens[i].toString())) {
     return token;
   }
 
