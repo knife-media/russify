@@ -12,6 +12,7 @@ const SparkMD5 = require('spark-md5');
 const asyncRedis = require('async-redis');
 
 const satanization = require('./satanization');
+const posts = require('./posts');
 
 
 // Parse dotenv config
@@ -21,13 +22,12 @@ require('dotenv').config();
 const app = express();
 
 // Init redis
-//const client = asyncRedis.createClient();
+const client = asyncRedis.createClient();
 
-/*
 client.on('error', (err) => {
   console.log('Redis error: ' + err);
 });
-*/
+
 
 Az.Morph.init('node_modules/az/dicts', (err) => {
   if (err) {
@@ -41,17 +41,23 @@ app.use(express.json({
 }));
 
 // Post data
-app.post('/', async (req, res) => {
+app.post('/', async (req, res, next) => {
   let data = [];
 
-  for (let i = 0; i < req.body.length; i++) {
-    let hash = 'satanization-' + SparkMD5.hash(req.body[i]);
+  const headings = req.body.headings;
+
+  if (posts.includes(req.body.path)) {
+    return res.status(200).json({'success': false});
+  }
+
+  for (let i = 0; i < headings.length; i++) {
+    const hash = 'satanization:' + SparkMD5.hash(headings[i]);
 
     // Find section in redis
-    let section = '';//await client.get(hash) || '';
+    let section = await client.get(hash) || '';
 
     if (!section) {
-      let tokens = Az.Tokens(req.body[i]).done();
+      const tokens = Az.Tokens(headings[i]).done();
 
       tokens.forEach((token, k) => {
         let word = token.toString();
@@ -64,7 +70,7 @@ app.post('/', async (req, res) => {
       });
 
       // Store section in redis
-      //await client.set(hash, section);
+      await client.set(hash, section);
     }
 
     data[i] = section;
@@ -77,7 +83,7 @@ app.post('/', async (req, res) => {
 });
 
 // Show server error
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     'success': false,
     'message': 'Server internal error'

@@ -1,6 +1,7 @@
 const Az = require('az');
 const forms = require('./forms');
 const excludes = require('./excludes');
+const posts = require('./posts');
 
 function getAdjective(tag, adjective = null) {
   let form = [];
